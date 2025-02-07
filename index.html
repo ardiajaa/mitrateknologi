@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mitratek Project Management</title>
+    <link rel="icon" type="image/png" href="https://yt3.googleusercontent.com/ytc/AIdro_k5_Z_OwYpzhlQ_tgFO5GAqcGiE0UmtF7dTX4ansNV5Wg=s900-c-k-c0x00ffffff-no-rj">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <style>
+        .login-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .card {
+            backdrop-filter: blur(10px);
+            background: white;
+        }
+        
+        .error-notification {
+            transform: translateY(-20px);
+            opacity: 0;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .error-notification.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .shake {
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        
+        @media (max-width: 768px) {
+            .card {
+                width: 90% !important;
+                margin: 0 auto;
+            }
+        }
+
+        .input-error {
+            border-color: #ef4444;
+            animation: shake 0.5s;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container flex items-center justify-center">
+        <div class="card p-8 rounded-lg shadow-xl w-96">
+            <div class="text-center mb-8">
+                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQNm0GjPZAmo763q1oTRqAZdm5AV3CJsp6JLg&s" alt="Mitratek Logo" class="mx-auto mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">Login Project Management Mitratek</h2>
+            </div>
+            
+            <!-- Error Notification -->
+            <div id="errorNotification" class="error-notification bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded hidden">
+                <div class="flex items-center">
+                    <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    <p>Username atau password salah!</p>
+                </div>
+            </div>
+
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Username</label>
+                    <input type="text" id="username" placeholder="Masukkan username disini" 
+                           class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-200 text-gray-800 placeholder-gray-500" 
+                           required>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Password</label>
+                    <input type="password" id="password" placeholder="Masukkan password disini" 
+                           class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-200 text-gray-800 placeholder-gray-500" 
+                           required>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-200">Login</button>
+            </form>
+            <div class="text-center mt-4 text-sm text-gray-600">
+                &copy; 2025 Powered by Ardi. All rights reserved.
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import db from './database.js';
+
+        const loginForm = document.getElementById('loginForm');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const errorNotification = document.getElementById('errorNotification');
+
+        // Function to show error notification
+        function showError() {
+            errorNotification.classList.remove('hidden');
+            errorNotification.classList.add('show');
+            
+            // Add shake animation to inputs
+            usernameInput.classList.add('input-error');
+            passwordInput.classList.add('input-error');
+            
+            // Remove shake animation after it completes
+            setTimeout(() => {
+                usernameInput.classList.remove('input-error');
+                passwordInput.classList.remove('input-error');
+            }, 500);
+        }
+
+        // Function to hide error notification
+        function hideError() {
+            errorNotification.classList.remove('show');
+            errorNotification.classList.add('hidden');
+        }
+
+        // Reset error state when inputs change
+        usernameInput.addEventListener('input', hideError);
+        passwordInput.addEventListener('input', hideError);
+
+        // Check session on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const loggedInUser = sessionStorage.getItem('loggedInUser');
+            if (loggedInUser) {
+                window.location.href = 'dashboard.html';
+            }
+        });
+
+        // Login functionality
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = usernameInput.value;
+            const password = passwordInput.value;
+
+            const user = db.authenticateUser(username, password);
+            if (user) {
+                sessionStorage.setItem('loggedInUser', username);
+                window.location.href = 'dashboard.html';
+            } else {
+                showError();
+            }
+        });
+    </script>
+</body>
+</html>

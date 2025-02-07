@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Mitratek Project Management</title>
+    <link rel="icon" type="image/png" href="https://yt3.googleusercontent.com/ytc/AIdro_k5_Z_OwYpzhlQ_tgFO5GAqcGiE0UmtF7dTX4ansNV5Wg=s900-c-k-c0x00ffffff-no-rj">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <style>
+        .status-pending {
+            background-color: #ff4444;
+            color: white;
+        }
+        .status-progress {
+            background-color: #ffbb33;
+            color: black;
+        }
+        .status-complete {
+            background-color: #00C851;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .nav-content {
+                flex-direction: column;
+                padding: 1rem;
+            }
+            
+            .user-controls {
+                margin-top: 1rem;
+            }
+            
+            .table-container {
+                overflow-x: auto;
+            }
+            
+            .search-add {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .search-input {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-100">
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center">
+                    <img src="https://mitratek.com/wp-content/uploads/2023/10/logo-20_08_2020.png" alt="Logo" class="h-10">
+                    <h1 class="ml-4 text-xl font-bold text-gray-800">Project Management Mitratek</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="userDisplay" class="text-gray-600"></span>
+                    <button id="logoutBtn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-200">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="flex justify-between items-center mb-6">
+                <div class="w-64">
+                    <input type="text" id="searchInput" placeholder="Search projects..." class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <button id="addProjectBtn" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition duration-200">Add Project</button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full table-auto">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deadline</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="projectTable">
+                        <!-- Project rows will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-center mt-6 pt-4 border-t text-sm text-gray-600">
+                &copy; 2025 Powered by Ardi. All rights reserved.
+            </div>
+        </div>
+    </main>
+
+    <!-- Add/Edit Project Modal -->
+    <div id="projectModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg p-8 w-96">
+            <h3 id="modalTitle" class="text-xl font-bold mb-4">Add Project</h3>
+            <form id="projectForm" class="space-y-4">
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Project Name</label>
+                    <input type="text" id="projectName" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Status</label>
+                    <select id="projectStatus" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="pending">Belum Dimulai</option>
+                        <option value="progress">Dalam Proses</option>
+                        <option value="complete">Selesai</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Deadline</label>
+                    <input type="date" id="projectDeadline" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" id="cancelBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">Cancel</button>
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import db from './database.js';
+
+        // Check authentication
+        document.addEventListener('DOMContentLoaded', () => {
+            const loggedInUser = sessionStorage.getItem('loggedInUser');
+            if (!loggedInUser) {
+                window.location.href = 'index.html';
+            } else {
+                userDisplay.textContent = `Welcome, ${loggedInUser}`;
+                renderProjects();
+            }
+        });
+
+        // DOM Elements
+        const userDisplay = document.getElementById('userDisplay');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const searchInput = document.getElementById('searchInput');
+        const projectTable = document.getElementById('projectTable');
+        const addProjectBtn = document.getElementById('addProjectBtn');
+        const projectModal = document.getElementById('projectModal');
+        const projectForm = document.getElementById('projectForm');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const modalTitle = document.getElementById('modalTitle');
+
+        // Logout functionality
+        logoutBtn.addEventListener('click', () => {
+            sessionStorage.removeItem('loggedInUser');
+            window.location.href = 'index.html';
+        });
+
+        // Search functionality
+        searchInput.addEventListener('input', () => {
+            renderProjects();
+        });
+
+        // Add project button
+        addProjectBtn.addEventListener('click', () => {
+            modalTitle.textContent = 'Add Project';
+            projectForm.reset();
+            projectModal.classList.remove('hidden');
+        });
+
+        // Cancel button
+        cancelBtn.addEventListener('click', () => {
+            projectModal.classList.add('hidden');
+        });
+
+        // Project form submission
+        projectForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('projectName').value;
+            const status = document.getElementById('projectStatus').value;
+            const deadline = document.getElementById('projectDeadline').value;
+            
+            if (projectForm.dataset.editing) {
+                const id = parseInt(projectForm.dataset.editing);
+                db.updateProject(id, { name, status, deadline });
+            } else {
+                db.addProject({ name, status, deadline });
+            }
+
+            projectModal.classList.add('hidden');
+            renderProjects();
+        });
+
+        // Render projects
+        function renderProjects() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const filteredProjects = db.searchProjects(searchTerm);
+
+            projectTable.innerHTML = filteredProjects.map((project, index) => `
+                <tr class="border-b">
+                    <td class="px-6 py-4 whitespace-nowrap">${index + 1}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${project.name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 rounded-full text-sm status-${project.status}">
+                            ${project.status === 'pending' ? 'Belum Dimulai' :
+                              project.status === 'progress' ? 'Dalam Proses' :
+                              'Selesai'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">${project.deadline}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button onclick="editProject(${project.id})" class="bg-blue-500 text-white px-3 py-1 rounded mr-2 hover:bg-blue-600">Edit</button>
+                        <button onclick="deleteProject(${project.id})" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Edit project
+        window.editProject = (id) => {
+    const project = db.getAllProjects().find(p => p.id === id);
+    if (project) {
+        modalTitle.textContent = 'Edit Project';
+        document.getElementById('projectName').value = project.name;
+        document.getElementById('projectStatus').value = project.status;
+        document.getElementById('projectDeadline').value = project.deadline;
+        projectForm.dataset.editing = id;
+        projectModal.classList.remove('hidden');
+    }
+};
+
+        // Delete project
+        window.deleteProject = (id) => {
+            if (confirm('Are you sure you want to delete this project?')) {
+                db.deleteProject(id);
+                renderProjects();
+            }
+        };
+
+        // Initial render
+        renderProjects();
+    </script>
+</body>
+</html>
